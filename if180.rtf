@@ -8,8 +8,11 @@
 previousYaw; 10,  100, 169, -10, -100\
 yaw;  - 150, -110, 10, -169,  100\
 \
+initialYaw_onJumping\
+yawOnLanding\
 \
-resultant = dif between previous and yaw(inverted)\
+\
+resultant =  yaw(inverted) \
 \
 ---------------------------------------------------------------------------------------- + 0\
 \
@@ -43,4 +46,9 @@ if ( previousYaw > -90 && previousYaw < -179) \{\
 \
 	if ( yaw > 0 && 90 + ( 179 + previousYaw) > yaw ) -----------> -180\
 	if ( yaw < 0 && -90 + (179 + previousYaw ) < yaw) -----------> +180\
-\}}
+\}\
+\
+\
+angle dif 9\
+x = 0.99\
+y = 0.16}

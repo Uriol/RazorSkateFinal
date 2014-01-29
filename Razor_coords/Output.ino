@@ -50,11 +50,16 @@ float initialYaw_onJumping, initialYaw_onJumpingToZero;
 float yawOnLanding;
 float rotationAir;
 
+
+// compensate yaw after 180s
+boolean minus180 = false;
+boolean plus180 = false;
+
 void output_angles()
 { 
  
   yaw = TO_DEG(yaw);
-  // Serial.println(yaw);
+   Serial.println(yaw);
 
   // Serial.print("YPR : ");Serial.print(yaw);Serial.print(" ,");Serial.print(TO_DEG(pitch));Serial.print(" ,"); Serial.print(TO_DEG(roll));Serial.println(" ,");
   
@@ -122,7 +127,7 @@ void output_angles()
   
 }
 
-void on_the_ground(){
+void on_the_ground(){ // Calculates speed X,Y and positions X,Y ------------------------------------------------------------------------------
     
   
  // Serial.println(yaw);
@@ -130,31 +135,34 @@ void on_the_ground(){
   airtime = 0;
   speedZ = 0;
   
+  if ( plus180 == true ) { yaw = yaw + 180; }
+ if ( minus180 == true ) { yaw = yaw - 180; } 
   
   
   
   angleDifference = yaw - previousYaw;
   totalAngleDifference = yaw - initialYaw;
- // Serial.print("totalAngleDifference");
- // Serial.println(totalAngleDifference);
+   Serial.print("totalAngleDifference");
+   Serial.println(totalAngleDifference);
   // to radians
   totalAngleDifference = totalAngleDifference*M_PI/180;
-//  Serial.print("totalAngleDifference");
+//  Serial.print("totalAngleDifference----------");
 //  Serial.println(totalAngleDifference);
   
   
   
   
   previousYaw = yaw;
-  
+  speedX = totalSpeed*cos(totalAngleDifference);
+  speedY = totalSpeed*sin(totalAngleDifference);
   
   // If angle difference is big enough
-  if ( angleDifference >= 0.01 || angleDifference <= -0.01) {
-    
-    speedX = totalSpeed*cos(totalAngleDifference);
-    speedY = totalSpeed*sin(totalAngleDifference);
-    
-  }
+//  if ( angleDifference >= 0.01 || angleDifference <= -0.01) {
+//    
+//    speedX = totalSpeed*cos(totalAngleDifference);
+//    speedY = totalSpeed*sin(totalAngleDifference);
+//    
+//  }
    
   
   Serial.print("speedX"); Serial.println(speedX);
@@ -163,17 +171,20 @@ void on_the_ground(){
   // Calculate landing direction ---------------------------------------------
   if (landing == true ) {
     calculateLanding(); 
+    totalAngleDifference = yawOnLanding - initialYaw;
+   Serial.print("totalAngleDifference");
+   Serial.println(totalAngleDifference);
   }
   
   
   
   // Calculate x position
   finalPosX = initialPosX + speedX*time;
-  Serial.print("finalPosX"); Serial.println(finalPosX);
+  //Serial.print("finalPosX"); Serial.println(finalPosX);
   
   // Calculate y position
   finalPosY = initialPosY + speedY*time;
-  Serial.print("finalPosY"); Serial.println(finalPosY);
+ // Serial.print("finalPosY"); Serial.println(finalPosY);
   
   // Restart values
   initialPosX = finalPosX;
@@ -183,7 +194,8 @@ void on_the_ground(){
 }
 
 
-void in_the_air(){
+void in_the_air(){ // while jumping calculates : time in the air, pos X,Y. First jump, initial yaw on jumping
+  
   // if cz is very small set to 0
   // Serial.print("real cz : "); Serial.println(cz);
   if (cz <= 0.35 && cz >= -0.35) {
@@ -200,9 +212,7 @@ void in_the_air(){
 
     Serial.print( "initialYaw_onJumping "); Serial.println(initialYaw_onJumping);
     
-    //  Set it to zero
-    initialYaw_onJumpingToZero = initialYaw_onJumping - initialYaw_onJumping;
-    Serial.print( "initialYaw_onJumpingToZero "); Serial.println(initialYaw_onJumpingToZero);
+    
   }
     jumping = true;
     landing = false;
@@ -233,11 +243,11 @@ void in_the_air(){
   
   // Calculate x position
   finalPosX = initialPosX + speedX*time;
-  Serial.print("finalPosX"); Serial.println(finalPosX);
+ // Serial.print("finalPosX"); Serial.println(finalPosX);
   
   // Calculate y position
   finalPosY = initialPosY + speedY*time;
-  Serial.print("finalPosY"); Serial.println(finalPosY);
+//  Serial.print("finalPosY"); Serial.println(finalPosY);
   
   // Restart values
   initialPosX = finalPosX;
@@ -246,7 +256,7 @@ void in_the_air(){
 }
 
 
-void checkPreviousAccelsZ(){
+void checkPreviousAccelsZ(){ // check if it stills in the air 
   // Check values of last 5 accels to check if it still jumping
   if ( z_accels[0] >= 0.35 || z_accels[0] <= -0.35 && cz == 0) { z_accel_jumping = true; }
   if ( z_accels[1] >= 0.35 || z_accels[1] <= -0.35 && cz == 0) { z_accel_jumping = true; }
@@ -262,6 +272,80 @@ void checkPreviousAccelsZ(){
 }
 
 
+
+
+
+// Calculate landing direction
+void calculateLanding(){ // Calculate yaw on landing and check for 180s
+ // Serial.println("Landing");
+  plus180 = false;
+  minus180 = false;
+  landing = false;
+  yawOnLanding = yaw ;
+  Serial.print( "yawOnLanding "); Serial.println(yawOnLanding);
+  
+  
+  // Calculate 180s
+  // first case initialYaw < 0 > 90
+  if ( initialYaw_onJumping > 0 && initialYaw_onJumping < 90 ) {
+    if ( -90 + initialYaw_onJumping < yawOnLanding && 90 + initialYaw_onJumping > yawOnLanding) { yawOnLanding = yawOnLanding; Serial.print( "case1: final yawOnLanding not 180 "); Serial.println(yawOnLanding); }
+    else if ( 90 + initialYaw_onJumping < yawOnLanding && yawOnLanding < 179 ) { yawOnLanding = yawOnLanding - 180; Serial.print( "case1: final yawOnLanding "); Serial.println(yawOnLanding); minus180 = true; }
+    else if ( -90 + initialYaw_onJumping > yawOnLanding && yawOnLanding > -179) {yawOnLanding = yawOnLanding + 180; Serial.print( "case1: final yawOnLanding "); Serial.println(yawOnLanding); plus180 = true; }
+   
+  }
+  
+  // second case initialYaw > 90 < 179
+  if ( initialYaw_onJumping > 90 && initialYaw_onJumping < 179 ) {
+     
+    if ( yawOnLanding > 0 && 90 - ( 179 - initialYaw_onJumping ) > yawOnLanding ) { yawOnLanding = yawOnLanding - 180; Serial.print( "case2: final yawOnLanding "); Serial.println(yawOnLanding); minus180 = true; }
+    else if ( -90 - ( 179 - initialYaw_onJumping ) < yawOnLanding && yawOnLanding < 0 ) { yawOnLanding = yawOnLanding + 180; Serial.print( "case2: final yawOnLanding "); Serial.println(yawOnLanding);  plus180 = true;}
+    else { yawOnLanding = yawOnLanding; Serial.print( "case2: final yawOnLanding not 180 "); Serial.println(yawOnLanding); }
+    
+  }
+  
+  
+  // Third case initial yaw < 0 > -90
+  if ( initialYaw_onJumping < 0 && initialYaw_onJumping > -90 ) {
+    
+    if ( yawOnLanding > -179 && yawOnLanding < -90 + initialYaw_onJumping ) {  yawOnLanding = yawOnLanding + 180; Serial.print( "case3: final yawOnLanding "); Serial.println(yawOnLanding); plus180 = true;}
+    else if ( 90 + initialYaw_onJumping < yawOnLanding && yawOnLanding < 179 ) { yawOnLanding = yawOnLanding - 180; Serial.print( "case3: final yawOnLanding "); Serial.println(yawOnLanding); minus180 = true; }
+    else  { yawOnLanding = yawOnLanding; Serial.print( "case3: final yawOnLanding not 180 "); Serial.println(yawOnLanding); }
+    
+  }
+  
+  
+  // fourth case initial yaw > -90 < -179
+  if ( initialYaw_onJumping < -90 && initialYaw_onJumping > -179 ) {
+    
+    if ( yawOnLanding > 0 && 90 + ( 179 + initialYaw_onJumping) > yawOnLanding ) { yawOnLanding = yawOnLanding - 180; Serial.print( "case4: final yawOnLanding "); Serial.println(yawOnLanding); minus180 = true; }
+    else if ( -90 + (179 + initialYaw_onJumping ) < yawOnLanding && yawOnLanding < 0 ) { yawOnLanding = yawOnLanding + 180; Serial.print( "case4: final yawOnLanding "); Serial.println(yawOnLanding); plus180 = true;}
+    else { yawOnLanding = yawOnLanding; Serial.print( "case4: final yawOnLanding not 180 "); Serial.println(yawOnLanding); }
+   
+  }
+  
+  
+  
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// not implemented yet -------------------------------------------------
+
+
 // Calculate initial speed of the jump
 void initialJumpSpeed(){
   speedZ = jumpSpeed*sin(jumpDegree);
@@ -269,7 +353,7 @@ void initialJumpSpeed(){
 }
 
 // if jumping == true calculate the jump
-void calculateJump(){
+void calculateJump(){ 
   airtime += 0.02;
  // Serial.print("airtime :"); Serial.println(airtime);
  // Serial.print("speedZ :"); Serial.println(speedZ);
@@ -286,21 +370,7 @@ void calculateJump(){
 }
 
 
-// Calculate landing direction
-void calculateLanding(){
- // Serial.println("Landing");
-  landing = false;
-  yawOnLanding = yaw ;
- // Serial.print( "yawOnLanding "); Serial.println(yawOnLanding);
-  
-  if ( initialYaw_onJumping <= 0 && yawOnLanding <= 0 || initialYaw_onJumping <= 0 && yawOnLanding >= 0) {
-    rotationAir = yawOnLanding - initialYaw_onJumping;
-  } else if ( initialYaw_onJumping <= 0 && yawOnLanding >= 0 ) {
-    rotationAir = yawOnLanding - initialYaw_onJumping;
-  }
-   
-   // Serial.print( "rotationAir "); Serial.println(rotationAir);
-}
+
 
 
 
