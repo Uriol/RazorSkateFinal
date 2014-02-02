@@ -15,7 +15,8 @@ float previousYaw;
 float angleDifference;
 
 // Speed
-float totalSpeed = 1;
+float totalSpeed;
+float initialTotalSpeed;
 float speedX = totalSpeed; 
 float speedY = 0;
 
@@ -59,7 +60,7 @@ void output_angles()
 { 
  
   yaw = TO_DEG(yaw);
-   Serial.println(yaw);
+  // Serial.println(yaw);
 
   // Serial.print("YPR : ");Serial.print(yaw);Serial.print(" ,");Serial.print(TO_DEG(pitch));Serial.print(" ,"); Serial.print(TO_DEG(roll));Serial.println(" ,");
   
@@ -67,8 +68,12 @@ void output_angles()
   rx = accel[0] * S;
   ry = accel[1] * S;
   rz = accel[2] * S;
+  
+  if ( rx <= 0.05 && rx >= -0.05 ) { rx = 0;}
+  
+  
 //  Serial.print("#RAW-"); Serial.print('=');
-//  Serial.print(rx); Serial.print(",");
+  Serial.print(rx); Serial.print(",");
 //  Serial.print(ry); Serial.print(",");
  // Serial.print(rz); Serial.println();
   // Get quaternions data
@@ -109,11 +114,15 @@ void output_angles()
     counter += 20;
     initialYaw = yaw;
     previousYaw = yaw;
+     totalSpeed = initialTotalSpeed + (rx*9.8)*time;
+    initialTotalSpeed = totalSpeed;
+    Serial.print("totalSpeed : ");Serial.println(totalSpeed);
   }
 
   if (counter >= 6000) {
     start = true;
     //Serial.print(start);
+   
   }
    
   // Start everything on start = true 
@@ -124,6 +133,9 @@ void output_angles()
     in_the_air();
     
   }
+  
+  
+  Serial.println("--------------------------------");
   
 }
 
@@ -180,11 +192,11 @@ void on_the_ground(){ // Calculates speed X,Y and positions X,Y ----------------
   
   // Calculate x position
   finalPosX = initialPosX + speedX*time;
-  //Serial.print("finalPosX"); Serial.println(finalPosX);
+  Serial.print("finalPosX"); Serial.println(finalPosX);
   
   // Calculate y position
   finalPosY = initialPosY + speedY*time;
- // Serial.print("finalPosY"); Serial.println(finalPosY);
+  Serial.print("finalPosY"); Serial.println(finalPosY);
   
   // Restart values
   initialPosX = finalPosX;
@@ -236,22 +248,23 @@ void in_the_air(){ // while jumping calculates : time in the air, pos X,Y. First
   }
   
   // If it is jumping calculate jump
-  if ( jumping == true ) { Serial.println("Jumping --------------------------- ");  calculateJump(); }
+  if ( jumping == true ) { Serial.println("Jumping ^^^^^^^^^^^^^^^^^^^^^^^^^ ");  calculateJump(); 
   
   Serial.print("speedX"); Serial.println(speedX);
   Serial.print("speedY"); Serial.println(speedY);
   
   // Calculate x position
   finalPosX = initialPosX + speedX*time;
- // Serial.print("finalPosX"); Serial.println(finalPosX);
+  Serial.print("finalPosX"); Serial.println(finalPosX);
   
   // Calculate y position
   finalPosY = initialPosY + speedY*time;
-//  Serial.print("finalPosY"); Serial.println(finalPosY);
+  Serial.print("finalPosY"); Serial.println(finalPosY);
   
   // Restart values
   initialPosX = finalPosX;
   initialPosY = finalPosY;
+  }
    
 }
 
